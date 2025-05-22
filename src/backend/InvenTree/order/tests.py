@@ -389,6 +389,110 @@ class OrderTest(TestCase):
         # However *no* notification should have been generated for the creating user
         self.assertFalse(messages.filter(user__pk=3).exists())
 
+    def test_get_destination_priority(self):
+        """Test the get_destination() method priority."""
+        # Create locations
+        loc1 = StockLocation.objects.create(name='LOC1', description='Location 1')
+        loc2 = StockLocation.objects.create(name='LOC2', description='Location 2')
+        loc3 = StockLocation.objects.create(name='LOC3', description='Location 3')
+
+        # Get a supplier
+        supplier = Company.objects.get(name='ACME')
+
+        # Get a part and set its default location
+        part_model = Part.objects.get(name='M2x4 LPHS') # An existing part from fixtures
+        part_model.default_location = loc3
+        part_model.save()
+
+        # Create a supplier part
+        supplier_part = SupplierPart.objects.create(part=part_model, supplier=supplier, SKU='TEST-SKU-DEST')
+
+        # Create a purchase order
+        po = PurchaseOrder.objects.create(
+            reference='PO-DEST-TEST',
+            supplier=supplier,
+            description='Test PO for destination',
+        )
+
+        # Create a purchase order line item
+        line = PurchaseOrderLineItem.objects.create(
+            order=po,
+            part=supplier_part,
+            quantity=10,
+        )
+
+        # Scenario 1: Only PO Line destination
+        line.destination = loc1
+        line.save()
+        po.destination = None
+        po.save()
+        part_model.default_location = None
+        part_model.save()
+        self.assertEqual(line.get_destination(), loc1, "Scenario 1 Failed: PO Line destination")
+
+        # Scenario 2: Only Purchase Order destination
+        line.destination = None
+        line.save()
+        po.destination = loc2
+        po.save()
+        part_model.default_location = None
+        part_model.save()
+        self.assertEqual(line.get_destination(), loc2, "Scenario 2 Failed: PO destination")
+
+        # Scenario 3: Only Part default location
+        line.destination = None
+        line.save()
+        po.destination = None
+        po.save()
+        part_model.default_location = loc3
+        part_model.save()
+        self.assertEqual(line.get_destination(), loc3, "Scenario 3 Failed: Part default location")
+
+        # Scenario 4: PO Line destination and PO destination
+        line.destination = loc1
+        line.save()
+        po.destination = loc2
+        po.save()
+        part_model.default_location = None
+        part_model.save()
+        self.assertEqual(line.get_destination(), loc1, "Scenario 4 Failed: PO Line takes precedence over PO")
+
+        # Scenario 5: PO Line destination and Part default location
+        line.destination = loc1
+        line.save()
+        po.destination = None
+        po.save()
+        part_model.default_location = loc3
+        part_model.save()
+        self.assertEqual(line.get_destination(), loc1, "Scenario 5 Failed: PO Line takes precedence over Part default")
+
+        # Scenario 6: PO destination and Part default location
+        line.destination = None
+        line.save()
+        po.destination = loc2
+        po.save()
+        part_model.default_location = loc3
+        part_model.save()
+        self.assertEqual(line.get_destination(), loc2, "Scenario 6 Failed: PO takes precedence over Part default")
+
+        # Scenario 7: All three locations are set
+        line.destination = loc1
+        line.save()
+        po.destination = loc2
+        po.save()
+        part_model.default_location = loc3
+        part_model.save()
+        self.assertEqual(line.get_destination(), loc1, "Scenario 7 Failed: PO Line takes precedence over all")
+
+        # Scenario 8: None of the destinations/default locations are set
+        line.destination = None
+        line.save()
+        po.destination = None
+        po.save()
+        part_model.default_location = None
+        part_model.save()
+        self.assertIsNone(line.get_destination(), "Scenario 8 Failed: None set, should return None")
+
     def test_metadata(self):
         """Unit tests for the metadata field."""
         for model in [PurchaseOrder, PurchaseOrderLineItem, PurchaseOrderExtraLine]:

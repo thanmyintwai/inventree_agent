@@ -1604,10 +1604,14 @@ class PurchaseOrderLineItem(OrderLineItem):
         ):
             if item.location:
                 return item.location
-        if self.destination:
+        if self.destination:  # This is "Purchase Order Line destination"
             return self.destination
-        if self.part and self.part.part and self.part.part.default_location:
+        if self.order and self.order.destination:  # This is "Purchase Order destination" (from the PO header)
+            return self.order.destination
+        if self.part and self.part.part and self.part.part.default_location:  # This is "Part Default Location"
             return self.part.part.default_location
+        
+        return None
 
     def remaining(self):
         """Calculate the number of items remaining to be received."""
