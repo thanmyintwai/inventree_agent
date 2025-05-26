@@ -35,7 +35,7 @@ from company.serializers import (
     SupplierPartSerializer,
 )
 from generic.states.fields import InvenTreeCustomStatusSerializerMixin
-from importer.mixins import DataImportExportSerializerMixin
+from importer.mixins import DataImportSerializerMixin
 from importer.registry import register_importer
 from InvenTree.helpers import (
     current_date,
@@ -103,7 +103,7 @@ class DuplicateOrderSerializer(serializers.Serializer):
     )
 
 
-class AbstractOrderSerializer(DataImportExportSerializerMixin, serializers.Serializer):
+class AbstractOrderSerializer(DataImportSerializerMixin, serializers.Serializer):
     """Abstract serializer class which provides fields common to all order types."""
 
     export_exclude_fields = ['notes', 'duplicate']
@@ -257,7 +257,7 @@ class AbstractLineItemSerializer:
 
 
 class AbstractExtraLineSerializer(
-    DataImportExportSerializerMixin, serializers.Serializer
+    DataImportSerializerMixin, serializers.Serializer
 ):
     """Abstract Serializer for a ExtraLine object."""
 
@@ -310,18 +310,44 @@ class PurchaseOrderSerializer(
 
         model = order.models.PurchaseOrder
 
-        fields = AbstractOrderSerializer.order_fields([
+        fields = [
+            'pk',
+            'creation_date',
+            'target_date',
+            'description',
+            'line_items',  # Annotated
+            'completed_lines',  # Annotated
+            'link',
+            'project_code',
+            'project_code_label', # Annotated
+            'project_code_detail', # Serializer field
+            'reference',
+            'responsible',
+            'responsible_detail', # Serializer field
+            'contact',
+            'contact_detail', # Serializer field
+            'address',
+            'address_detail', # Serializer field
+            'status',
+            'status_text', # Annotated
+            'status_custom_key', # From InvenTreeCustomStatusSerializerMixin
+            'notes', # From NotesFieldMixin
+            'barcode_hash', # Annotated
+            'overdue',  # Annotated
+            'duplicate', # Serializer field (write-only)
+            # PurchaseOrder specific fields
             'issue_date',
             'complete_date',
             'supplier',
-            'supplier_detail',
+            'supplier_detail', # Serializer field
             'supplier_reference',
-            'supplier_name',
-            'total_price',
-            'order_currency',
+            'supplier_name', # Annotated
+            'total_price', # From TotalPriceMixin
+            'order_currency', # From TotalPriceMixin
             'destination',
-        ])
-
+            # Fields from MetadataMixin if they are intended here (usually not listed explicitly unless customized)
+            # 'metadata', 
+        ]
         read_only_fields = ['issue_date', 'complete_date', 'creation_date']
 
         extra_kwargs = {
@@ -464,7 +490,7 @@ class PurchaseOrderIssueSerializer(OrderAdjustSerializer):
 
 @register_importer()
 class PurchaseOrderLineItemSerializer(
-    DataImportExportSerializerMixin,
+    DataImportSerializerMixin,
     AbstractLineItemSerializer,
     InvenTreeModelSerializer,
 ):
@@ -1069,7 +1095,7 @@ class SalesOrderIssueSerializer(OrderAdjustSerializer):
 
 @register_importer()
 class SalesOrderLineItemSerializer(
-    DataImportExportSerializerMixin,
+    DataImportSerializerMixin,
     AbstractLineItemSerializer,
     InvenTreeModelSerializer,
 ):
@@ -2023,7 +2049,7 @@ class ReturnOrderReceiveSerializer(serializers.Serializer):
 
 @register_importer()
 class ReturnOrderLineItemSerializer(
-    DataImportExportSerializerMixin,
+    DataImportSerializerMixin,
     AbstractLineItemSerializer,
     InvenTreeModelSerializer,
 ):
