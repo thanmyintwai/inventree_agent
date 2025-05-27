@@ -48,7 +48,7 @@ class GeneralExtraLineList(DataExportViewMixin):
     def get_serializer(self, *args, **kwargs):
         """Return the serializer instance for this endpoint."""
         try:
-            params = self.request.query_params3
+            params = self.request.query_params
 
             kwargs['order_detail'] = str2bool(params.get('order_detail', False))
         except AttributeError:
