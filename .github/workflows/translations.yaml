@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # pin@v5.0.0
       - name: Environment Setup
         uses: ./.github/actions/setup
         with:
@@ -51,7 +51,7 @@ jobs:
           git reset --hard
           git reset HEAD~
       - name: crowdin action
-        uses: crowdin/github-action@8dfaf9c206381653e3767e3cb5ea5f08b45f02bf # pin@v2
+        uses: crowdin/github-action@08713f00a50548bfe39b37e8f44afb53e7a802d4 # pin@v2
         with:
           upload_sources: true
           upload_translations: false
